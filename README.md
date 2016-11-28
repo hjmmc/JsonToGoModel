@@ -1,0 +1,2 @@
+# JsonToGoModel
+把JSON对象直接转为Go实体

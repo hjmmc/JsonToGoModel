@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>JsonToGoModel</title>
+	<style type="text/css">
+		textarea{
+			height: 550px; width: 450px;
+		}
+		body{
+			text-align: center;
+		}
+		button{
+			margin: 10px;
+			height: 50px;
+			width: 100px;
+			background-color: #49a195;
+			border: none;
+			color: white;
+		}
+	</style>
+</head>
+<body>
+<div>
+	<textarea id="json">
+{
+    "name":"mmc",
+    "url":"http://a.a.com",
+    "address":{
+        "city":"厦门",
+        "country":"中国",
+        "isShow":true,
+        "index":0
+    },
+    "arrayBrowser":[{
+        "name":"Google",
+        "url":"http://www.google.com"
+    },
+    {
+       "name":"Baidu",
+       "url":"http://www.baidu.com"
+   },
+   {
+       "name":"SoSo",
+       "url":"http://www.SoSo.com"
+   }]
+}	</textarea>
+	<textarea id="model">
+		
+	</textarea>
+	<div>
+		至少包含<input style="width:40px;" type="number" id="MIN_FIELD_COUNT" value="2" />个字段才生成实体
+	</div>
+	<div>
+		<button onclick="gen()">生成Go实体</button>
+	</div>
+</div>
+</body>
+<script type="text/javascript">
+	var MIN_FIELD_COUNT = 2
+	var model = {}
+
+	function gen() {
+		model = {}
+		MIN_FIELD_COUNT = parseInt(document.getElementById('MIN_FIELD_COUNT').value)
+		document.getElementById('model').value = ''
+		var json = JSON.parse(document.getElementById('json').value)
+		D('json', json)
+		for (var k in model) {
+			console.log('type ' + k + ' struct{')
+			console.log(model[k] + '}')
+			document.getElementById('model').value += 'type ' + k + ' struct{' + '\n' + model[k] + '}\n\n'
+		}
+	}
+
+	function D(objname, obj) {
+		objname = objname.replace(/(\w)/, function(v) {
+			return v.toUpperCase()
+		})
+		while (model[objname] != undefined)
+			objname += objname
+			// if (model[objname]!=undefined)
+			// 	return 'interface{}'
+		model[objname] = '';
+		for (var k in obj) {
+			type = typeof obj[k]
+			if (type == 'number')
+				type = 'int'
+			else if (type == 'boolean')
+				type = 'bool'
+			else if (type == 'object') {
+				if (isArray(obj[k])) {
+					if (obj[k].length == 0) {
+						type = '[]interface{}'
+					} else {
+						if (isNullObject(obj[k][0])) {
+							type = '[]interface{}'
+						} else {
+							type = '[]' + D(k, obj[k][0])
+						}
+					}
+				} else {
+					if (isNullObject(obj[k])) {
+						type = 'interface{}'
+					} else {
+						type = D(k, obj[k])
+					}
+				}
+			}
+			model[objname] += (k.replace(/(\w)/, function(v) {
+				return v.toUpperCase()
+			}) + " " + type + " " + '`json:"' + k + '"`\n')
+		}
+		return objname
+	}
+
+	// for (var k in json) {
+	// 	type = typeof json[k]
+	// 	if (type == 'number')
+	// 		type = 'int'
+	// 	else if (type == 'boolean')
+	// 		type = 'bool'
+	// 	else if (type == 'object') {
+	// 		if (isArray(json[k])) {
+	// 			type = '[]interface{}'
+	// 		} else {
+	// 			type = 'interface{}'
+	// 		}
+	// 	}
+	// 	console.log(k.replace(/(\w)/, function(v) {
+	// 		return v.toUpperCase()
+	// 	}) + " " + type + " " + '`json:"' + k + '"`')
+	// }
+
+	function isNullObject(obj) {
+		if (obj != null && obj != undefined) {
+			var i = 0;
+			for (var k in obj) {
+				i++
+			}
+			if (i >= MIN_FIELD_COUNT)
+				return false
+		}
+		return true
+	}
+
+	function isArray(obj) {
+		return Object.prototype.toString.call(obj) === '[object Array]';
+	}
+</script>
+</html>
